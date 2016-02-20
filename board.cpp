@@ -33,7 +33,7 @@ void postEncoderEvent(int direction) {
     }
 }
 
-ISR(INT0_vect) { 
+ISR(INT4_vect) { 
     // call the static update function
     int direction = Encoder::update(myEnc.interruptArgs[0]);
     if (direction) {
@@ -42,7 +42,7 @@ ISR(INT0_vect) {
     }
 }
 
-ISR(INT1_vect) { 
+ISR(INT5_vect) { 
     // call the static update function
     int direction = Encoder::update(myEnc.interruptArgs[1]);
     if (direction) {
@@ -51,18 +51,16 @@ ISR(INT1_vect) {
     }
 }
 
+/*
 ISR(INT6_vect) { 
     // post event
     //GrinderEvent *pEvt = Q_NEW(GrinderEvent, BUTTON_DOWN_SIG);
     //AO_Grinder->POST(pEvt, 2);
     Serial1.println("BUTTON_DOWN_SIG posted.");
 }
+*/
 
 
-ISR(TIMER0_COMPA_vect) {
-    QF_tickISR(); /* process time events for rate 0 */
-    //QF_tickISR();
-}
 
 void BSP_ledOff(void) {
     digitalWrite(BUTTON_LED_PIN, LOW);    // turn the LED off by making the voltage LOW
@@ -71,6 +69,32 @@ void BSP_ledOff(void) {
 void BSP_ledOn(void) {
     digitalWrite(BUTTON_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
     //Serial1.println(myEnc.read());
+}
+
+void BSP_setupTickTimer(void) {
+
+    // ===== configure 8bit Timer0 =====
+
+    cli();          // disable global interrupt
+
+    TCCR0A = 0;     // set entire TCCR1A register to 0
+    TCCR0B = 0;     // set entire TCCR1A register to 0
+
+    TCCR0A |= (1 << WGM01);                 // timer/counter control, CTC mode, no PWM
+    TCCR0B |= (1 << CS02 ) | (1 << CS00);   // timer/counter control, 1/1024 prescaler, internal clock source
+
+    TCNT0  = 0;                             // timer/counter 0, initialize couter to 0
+    OCR0A  = (F_CPU / BSP_TICKS_PER_SEC / 1024) - 1;  // output compare register, init with value to compare to
+
+    TIMSK0 |= (1 << OCIE0A);         // timer interrupt mask, enable TIMER0 compare A Interrupt
+    
+    sei();          // enable global interrupts
+
+}
+    
+ISR (TIMER0_COMPA_vect) {
+
+    QF_tickISR(); /* process time events for rate 0 */
 }
 
 
@@ -164,21 +188,23 @@ void BSP_init(void) {
     Serial1.begin(115200U); // set the highest stanard baud rate of 115200 bps
     Serial1.println("Starting.");
 
+    cli();
+
     // button pins
-    pinMode(BUTTON_LED_PIN, OUTPUT);    // button LED
-    pinMode(BUTTON_SWITCH_PIN, INPUT);     // button direction
-    digitalWrite(BUTTON_SWITCH_PIN, HIGH); // button: turn on pullup resistors
+    //pinMode(BUTTON_LED_PIN, OUTPUT);    // button LED
+    //pinMode(BUTTON_SWITCH_PIN, INPUT);     // button direction
+    //digitalWrite(BUTTON_SWITCH_PIN, HIGH); // button: turn on pullup resistors
 
     // configure external interrupt 1 (ArduinoPin2, PD1, Encoder)
-    EICRA |= (1<<ISC00)|(0<<ISC01); // external int ctrl, any edge detection for interrupt INT0
-    EIMSK |= (1<<INT0);             // external int mask, activates interrupt 0
+    EICRB |= (1<<ISC40)|(0<<ISC41); // external int ctrl, any edge detection for interrupt INT4
+    EIMSK |= (1<<INT4);             // external int mask, activates interrupt 0
 
-    EICRA |= (1<<ISC10)|(0<<ISC11); // external int ctrl, any edge detection for interrupt INT1
-    EIMSK |= (1<<INT1);             // external int mask, activates interrupt 1
+    EICRB |= (1<<ISC50)|(0<<ISC51); // external int ctrl, any edge detection for interrupt INT5
+    EIMSK |= (1<<INT5);             // external int mask, activates interrupt 1
 
     // configure external interrupt 6 (Pin7)
-    EICRB |= (0<<ISC60)|(1<<ISC61); // external int ctrl, falling edge detection for interrupt INT6
-    EIMSK |= (1<<INT6);             // external int mask, activates interrupt 6
+    //EICRB |= (0<<ISC60)|(1<<ISC61); // external int ctrl, falling edge detection for interrupt INT6
+    //EIMSK |= (1<<INT6);             // external int mask, activates interrupt 6
 
     Serial1.println("Interrupts set up done.");
 
@@ -204,6 +230,8 @@ void BSP_init(void) {
 
     //display.setFont(&FreeSansBold18pt7b);
     display.display();
+
+    sei(); /* set Global Interrupt Enable */
 
 }
 

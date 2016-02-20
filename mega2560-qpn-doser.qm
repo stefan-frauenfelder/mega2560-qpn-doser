@@ -62,8 +62,7 @@ QActive_arm((QActive *)me, BSP_TICKS_PER_SEC);</entry>
      <state_glyph node="7,11,17,15"/>
     </state>
     <state name="measuring">
-     <entry brief="armTimer">QActive_arm((QActive *)me, SCALE_MEASUREMENT_RATE);
-</entry>
+     <entry brief="armTimer">QActive_arm((QActive *)me, SCALE_MEASUREMENT_RATE);</entry>
      <tran trig="Q_TIMEOUT" target="../../2">
       <tran_glyph conn="59,45,1,3,12">
        <action box="0,-2,10,2"/>
@@ -135,8 +134,7 @@ BSP_displayDose(TargetDose);</action>
   </operation>
  </package>
  <directory name=".">
-  <file name="doser.c"/>
-  <file name="Doser.ino">
+  <file name="mega2560-qpn-doser.ino">
    <text>
 //#include &quot;includes.h&quot;
 
@@ -177,22 +175,7 @@ $define(components::TargetDose)
 
 /* QF callbacks ============================================================*/
 void QF_onStartup(void) {
-
-    /* set Timer2 in CTC mode, 1/1024 prescaler, start the timer ticking... 
-    TCCR2A = (1U &lt;&lt; WGM21) | (0U &lt;&lt; WGM20);
-    TCCR2B = (1U &lt;&lt; CS22 ) | (1U &lt;&lt; CS21) | (1U &lt;&lt; CS20); 
-    ASSR  &amp;= ~(1U &lt;&lt; AS2);
-    TIMSK2 = (1U &lt;&lt; OCIE2A); /* Enable TIMER2 compare Interrupt 
-    TCNT2  = 0U;
-    OCR2A  = (F_CPU / BSP_TICKS_PER_SEC / 1024U) - 1U;
-*/
-    // configure 8bit Timer0
-    TCCR0A = (1 &lt;&lt; WGM01) | (0 &lt;&lt; WGM00); // timer/counter control, CTC mode, no PWM
-    TCCR0B = (1 &lt;&lt; CS02 ) | (0 &lt;&lt; CS01) | (1 &lt;&lt; CS00); // timer/counter control, 1/1024 prescaler, internal clock source
-    //ASSR  &amp;= ~(1 &lt;&lt; AS2);
-    TIMSK0 = (1 &lt;&lt; OCIE0A);         // timer interrupt mask, enable TIMER2 compare Interrupt
-    TCNT0  = 0;                     // timer/counter 0, initialize couter to 0
-    OCR0A  = (F_CPU / BSP_TICKS_PER_SEC / 1024) - 1; // output compare register, init with value to compare to
+    BSP_setupTickTimer();
 }
 /*..........................................................................*/
 void QF_onCleanup(void) {
@@ -200,15 +183,12 @@ void QF_onCleanup(void) {
 
 /*..........................................................................*/
 void QV_onIdle(void) {   /* called with interrupts DISABLED, see NOTE1 */
-
     QF_INT_ENABLE(); /* just enable interrupts */
-
 }
 /*..........................................................................*/
 void Q_onAssert(char const Q_ROM * const file, int line) {
     /* implement the error-handling policy for your application!!! */
-    Serial1.println(&quot;Assert hit.&quot;);
-
+    Serial1.println(&quot;Q_onAssert.&quot;);
     QF_INT_DISABLE(); /* disable all interrupts */
     QF_RESET();  /* reset the CPU */
 }
@@ -234,15 +214,15 @@ void setup() {
     */
 
     BSP_init(); // initialize the BSP
-    Serial1.println(&quot;BSP init done.&quot;);
+
     Scale_constructor();  // instantiate the Sensor AO
     Grinder_constructor();    // instantiate the Pirs AO
-    Serial1.println(&quot;Going to run.&quot;);
+
     QF_run();       // transfer control to QF-nano
 }
 
 void loop() {
-    Serial1.println(&quot;Loop hit.&quot;);
+
 }</text>
   </file>
   <file name="scale.cpp">

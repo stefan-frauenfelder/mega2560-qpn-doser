@@ -12,8 +12,8 @@
 
 
 // button with led
-#define BUTTON_LED_PIN 5
-#define BUTTON_SWITCH_PIN 7
+#define BUTTON_LED_PIN 30
+#define BUTTON_SWITCH_PIN 31
 
 // encoder port
 #define ENCODER_CTL DDRD //encoder port control
@@ -23,17 +23,17 @@
 #define ENCODER_B 3
 
 // scale
-#define SCALE_DOUT  4
-#define SCALE_CLK   6
+#define SCALE_DOUT  22
+#define SCALE_CLK   23
 #define SCALE_CALIBRATION_FACTOR -444190.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
 
 // OLED
-//#define SPI_MOSI 16
-//#define SPI_MISO 14
-//#define SPI_CLK  15
-#define OLED_DC     8
-#define OLED_CS    10
-#define OLED_RESET  9
+//#define SPI_MOSI 51
+//#define SPI_MISO 50
+//#define SPI_CLK  52
+#define OLED_DC    49
+#define OLED_CS    53
+#define OLED_RESET 48
 
 // sensor general
 const int ONESEC_TOUT               =  1 * BSP_TICKS_PER_SEC;   // one second

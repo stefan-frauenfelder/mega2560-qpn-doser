@@ -10,7 +10,7 @@
 
 #include <SPI.h>
 
-#include <SimpleEncoder.h>
+#include "encoder.h"
 
 #include <stdlib.h>
 
@@ -26,6 +26,8 @@
 void BSP_init(void);
 void BSP_ledOn(void);
 void BSP_ledOff(void);
+
+void BSP_setupTickTimer(void);
 
 void BSP_displayPosition(float position); 
 void BSP_displayDose(float dose); 
