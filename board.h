@@ -27,11 +27,14 @@ void BSP_init(void);
 void BSP_ledOn(void);
 void BSP_ledOff(void);
 
+void BSP_println(char* str);
+
 void BSP_setupTickTimer(void);
 
 void BSP_displayPosition(float position); 
 void BSP_displayDose(float dose); 
 
+void BSP_scaleTare(void);
 float BSP_scaleSample(void);
 
 

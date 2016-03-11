@@ -2,18 +2,13 @@
 #ifndef config_h
 #define config_h
 
-// voltages
-#define AVCCMV      3042
-#define VBATTMAXMV  3000
-#define VBATTMINMV  1800
-
 
 #define BSP_TICKS_PER_SEC  100U
 
 
 // button with led
 #define BUTTON_LED_PIN 30
-#define BUTTON_SWITCH_PIN 31
+#define BUTTON_SWITCH_PIN 21
 
 // encoder port
 #define ENCODER_CTL DDRD //encoder port control
@@ -26,6 +21,8 @@
 #define SCALE_DOUT  22
 #define SCALE_CLK   23
 #define SCALE_CALIBRATION_FACTOR -444190.0 //This value is obtained using the SparkFun_HX711_Calibration sketch
+
+#define FLOAT_PRECISION 1
 
 // OLED
 //#define SPI_MOSI 51

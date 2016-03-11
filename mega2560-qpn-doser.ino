@@ -38,20 +38,27 @@ extern "C" {
 
 static QEvt scaleQueue[5];
 static QEvt grinderQueue[5];
+static QEvt encoderQueue[5];
 
 // QF_active[] array defines all active object control blocks
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,     0                    },
     { (QActive *)&AO_Scale,   scaleQueue,    Q_DIM(scaleQueue)    },
-    { (QActive *)&AO_Grinder, grinderQueue,  Q_DIM(grinderQueue)  }
+    { (QActive *)&AO_Grinder, grinderQueue,  Q_DIM(grinderQueue)  },
+    { (QActive *)&AO_Encoder, encoderQueue,  Q_DIM(encoderQueue)  }
 };
 
 
 // make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h
 Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
 
+//Q_ASSERT_COMPILE(1 - 1);
+
 /*${components::TargetDose} ................................................*/
 float TargetDose;
+
+/*${components::Weight} ....................................................*/
+float Weight;
 
 
 
@@ -97,8 +104,9 @@ void setup() {
 
     BSP_init(); // initialize the BSP
 
-    Scale_constructor();  // instantiate the Sensor AO
-    Grinder_constructor();    // instantiate the Pirs AO
+    aoScale_constructor();
+    aoGrinder_constructor();
+    aoEncoder_constructor();
 
     QF_run();       // transfer control to QF-nano
 }

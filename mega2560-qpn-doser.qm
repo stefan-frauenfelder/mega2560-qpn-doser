@@ -3,134 +3,241 @@
  <documentation>Simple model template for QP-nano</documentation>
  <framework name="qpn"/>
  <package name="components" stereotype="0x02">
-  <class name="Scale" superclass="qpn::QActive">
+  <class name="aoScale" superclass="qpn::QActive">
    <attribute name="weight" type="float" visibility="0x00" properties="0x00"/>
    <statechart>
-    <initial target="../4">
-     <initial_glyph conn="33,42,5,3,10">
+    <initial target="../1">
+     <initial_glyph conn="44,6,5,0,8,6">
       <action box="0,-2,10,2"/>
      </initial_glyph>
     </initial>
     <state name="idle">
-     <entry brief="LED on">BSP_ledOn();
-QActive_arm((QActive *)me, BSP_TICKS_PER_SEC);</entry>
-     <exit brief="LED off">BSP_ledOff();</exit>
-     <tran trig="SCALE_CALIB">
-      <tran_glyph conn="40,16,3,1,-16">
+     <entry>BSP_println(&quot;Scale enter idle.&quot;);</entry>
+     <tran trig="SCALE_TARE" target="../../2">
+      <tran_glyph conn="46,16,3,1,-22">
        <action box="-11,-2,10,2"/>
       </tran_glyph>
      </tran>
-     <tran trig="Q_TIMEOUT" target="../../4">
-      <tran_glyph conn="52,26,2,0,9">
-       <action box="0,0,10,2"/>
+     <tran trig="SCALE_START" target="../../3">
+      <tran_glyph conn="52,24,2,0,6">
+       <action box="0,2,13,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="40,11,21,15">
-      <entry box="1,2,12,2"/>
-      <exit box="1,4,9,3"/>
+     <state_glyph node="46,12,12,12">
+      <entry box="1,2,6,2"/>
      </state_glyph>
     </state>
-    <state name="sampling">
-     <entry brief="sample">me-&gt;weight = BSP_scaleSample();</entry>
-     <tran trig="SCALE_SAMPLING_DONE">
-      <choice target="../../../1">
-       <guard>else</guard>
-       <choice_glyph conn="88,40,4,1,-22,-27">
-        <action box="0,-4,10,2"/>
-       </choice_glyph>
-      </choice>
-      <choice target="../../../4">
-       <guard brief="weight &gt; TargetDose">me-&gt;weight &lt;  100*TargetDose</guard>
-       <choice_glyph conn="88,40,5,1,-29">
-        <action box="-16,-2,15,2"/>
-       </choice_glyph>
-      </choice>
-      <tran_glyph conn="71,49,3,-1,17,-9">
-       <action box="0,0,18,2"/>
-      </tran_glyph>
-     </tran>
-     <state_glyph node="71,33,23,19">
-      <entry box="1,2,9,2"/>
-     </state_glyph>
-    </state>
-    <state name="calibration">
-     <tran trig="SCALE_CALIB_DONE">
-      <tran_glyph conn="24,22,1,3,16">
+    <state name="taring">
+     <entry brief="tare">BSP_println(&quot;Scale taring.&quot;);
+BSP_scaleTare();</entry>
+     <tran trig="SCALE_TARE_DONE" target="../../1">
+      <action>QActive_postISR((QActive *)&amp;AO_Grinder, SCALE_TARE_DONE_SIG, 0);</action>
+      <tran_glyph conn="24,20,1,3,22">
        <action box="0,-2,16,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="7,11,17,15"/>
+     <state_glyph node="12,12,12,12">
+      <entry box="1,2,7,2"/>
+     </state_glyph>
     </state>
     <state name="measuring">
-     <entry brief="armTimer">QActive_arm((QActive *)me, SCALE_MEASUREMENT_RATE);</entry>
-     <tran trig="Q_TIMEOUT" target="../../2">
-      <tran_glyph conn="59,45,1,3,12">
+     <entry>BSP_println(&quot;Start measuring.&quot;);</entry>
+     <exit>BSP_println(&quot;Stop measuring.&quot;);</exit>
+     <initial target="../3">
+      <initial_glyph conn="56,34,5,0,6,4">
        <action box="0,-2,10,2"/>
+      </initial_glyph>
+     </initial>
+     <tran trig="SCALE_STOP" target="../../1">
+      <tran_glyph conn="68,30,0,1,-12,-10">
+       <action box="0,-6,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="43,35,16,15">
-      <entry box="1,2,10,2"/>
+     <state name="recovering">
+      <entry brief="armTimer">QActive_arm((QActive *)me, SCALE_MEASUREMENT_RATE);</entry>
+      <tran trig="Q_TIMEOUT" target="../../3">
+       <tran_glyph conn="38,44,1,3,20">
+        <action box="0,0,10,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="28,38,10,10">
+       <entry box="1,2,9,2"/>
+      </state_glyph>
+     </state>
+     <state name="sampling">
+      <entry brief="sample">me-&gt;weight = BSP_scaleSample();
+Weight = me-&gt;weight;</entry>
+      <tran trig="SCALE_SAMPLING_DONE" target="../../2">
+       <action>QActive_postISR((QActive *)&amp;AO_Grinder, SCALE_SAMPLING_DONE_SIG, 0);</action>
+       <tran_glyph conn="58,42,3,1,-20">
+        <action box="-18,-2,19,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="58,38,10,10">
+       <entry box="1,2,9,2"/>
+      </state_glyph>
+     </state>
+     <state_glyph node="24,30,48,20">
+      <entry box="1,2,6,2"/>
+      <exit box="1,4,6,2"/>
      </state_glyph>
     </state>
     <state_diagram size="101,61"/>
    </statechart>
   </class>
-  <class name="Grinder" superclass="qpn::QActive">
+  <class name="aoGrinder" superclass="qpn::QActive">
    <attribute name="dose" type="float" visibility="0x00" properties="0x00"/>
    <statechart>
     <initial target="../1">
-     <initial_glyph conn="6,3,5,0,17,5">
-      <action box="0,-2,10,2"/>
+     <action brief="TargetDose = 7">TargetDose = 7;</action>
+     <initial_glyph conn="6,3,5,0,20,5">
+      <action box="0,-2,13,2"/>
      </initial_glyph>
     </initial>
-    <state name="on">
+    <state name="operational">
      <initial target="../3">
-      <initial_glyph conn="9,19,5,3,5">
+      <initial_glyph conn="8,16,5,3,6">
        <action box="0,-2,10,2"/>
       </initial_glyph>
      </initial>
-     <tran trig="ENCODER_INC">
+     <tran trig="ENCODER_INC" target="..">
       <action brief="DOSE +">TargetDose += GRINDER_DOSE_STEP;
 BSP_displayDose(TargetDose);</action>
-      <tran_glyph conn="42,15,1,1,11,5,-11">
+      <tran_glyph conn="64,15,1,1,11,5,-11">
        <action box="0,-2,13,4"/>
       </tran_glyph>
      </tran>
-     <tran trig="ENCODER_DEC">
+     <tran trig="ENCODER_DEC" target="..">
       <action brief="DOSE -">TargetDose -= GRINDER_DOSE_STEP;
 BSP_displayDose(TargetDose);</action>
-      <tran_glyph conn="42,30,1,1,11,8,-11">
+      <tran_glyph conn="64,30,1,1,11,8,-11">
        <action box="0,-2,14,4"/>
       </tran_glyph>
      </tran>
      <state name="idle">
-      <entry brief="Initialize">TargetDose = 7;</entry>
-      <tran trig="Q_TIMEOUT">
-       <tran_glyph conn="23,26,2,0,5">
-        <action box="0,0,8,2"/>
+      <entry>BSP_println(&quot;Grinder enter idle.&quot;);</entry>
+      <tran trig="BUTTON_DOWN" target="../../6">
+       <tran_glyph conn="18,22,2,0,6">
+        <action box="0,0,14,2"/>
        </tran_glyph>
       </tran>
-      <state_glyph node="14,13,16,13">
-       <entry box="1,2,12,8"/>
+      <state_glyph node="14,12,8,10">
+       <entry box="1,2,7,2"/>
       </state_glyph>
      </state>
      <state name="grinding">
-      <state_glyph node="14,31,16,11"/>
+      <entry brief="Start motor &amp; scale">BSP_println(&quot;Start grinding.&quot;);
+BSP_ledOn();
+QActive_postISR((QActive *)&amp;AO_Scale, SCALE_START_SIG, 0);</entry>
+      <exit brief="Stop motor">BSP_ledOff();</exit>
+      <initial target="../1">
+       <initial_glyph conn="16,50,5,0,4,2">
+        <action box="0,-2,10,2"/>
+       </initial_glyph>
+      </initial>
+      <state name="polling">
+       <tran trig="SCALE_SAMPLING_DONE">
+        <choice target="../../../../5">
+         <guard brief="enougth?">Weight &gt;= TargetDose</guard>
+         <choice_glyph conn="32,54,5,2,4,-20">
+          <action box="0,-4,8,2"/>
+         </choice_glyph>
+        </choice>
+        <choice target="../..">
+         <guard brief="else"/>
+         <choice_glyph conn="32,54,4,1,4,-8">
+          <action box="1,0,10,2"/>
+         </choice_glyph>
+        </choice>
+        <tran_glyph conn="24,54,1,-1,8">
+         <action box="0,0,5,4"/>
+        </tran_glyph>
+       </tran>
+       <state_glyph node="16,52,8,8"/>
+      </state>
+      <state_glyph node="12,42,28,20">
+       <entry box="1,2,16,2"/>
+       <exit box="1,4,10,2"/>
+      </state_glyph>
      </state>
-     <state_glyph node="6,8,36,41"/>
+     <state name="done">
+      <entry>BSP_println(&quot;Grinder done.&quot;);</entry>
+      <exit brief="Stop scale">QActive_postISR((QActive *)&amp;AO_Scale, SCALE_STOP_SIG, 0);</exit>
+      <initial target="../1">
+       <initial_glyph conn="34,28,5,3,4">
+        <action box="0,-2,10,2"/>
+       </initial_glyph>
+      </initial>
+      <state name="rest">
+       <tran trig="SCALE_SAMPLING_DONE">
+        <choice target="../..">
+         <guard brief="Weight &gt; 0">Weight &gt; 0</guard>
+         <choice_glyph conn="52,26,4,1,4,-6">
+          <action box="0,1,10,2"/>
+         </choice_glyph>
+        </choice>
+        <choice target="../../../../3">
+         <guard brief="else"/>
+         <choice_glyph conn="52,26,4,1,-8,-30">
+          <action box="0,-4,10,2"/>
+         </choice_glyph>
+        </choice>
+        <tran_glyph conn="46,26,1,-1,6">
+         <action box="0,0,4,2"/>
+        </tran_glyph>
+       </tran>
+       <state_glyph node="38,24,8,8"/>
+      </state>
+      <state_glyph node="28,20,32,14">
+       <entry box="1,2,6,2"/>
+       <exit box="1,4,10,2"/>
+      </state_glyph>
+     </state>
+     <state name="calibration">
+      <entry brief="scale calib">QActive_postISR((QActive *)&amp;AO_Scale, SCALE_TARE_SIG, 0);</entry>
+      <tran trig="SCALE_TARE_DONE" target="../../4">
+       <tran_glyph conn="18,34,2,0,8">
+        <action box="0,0,16,2"/>
+       </tran_glyph>
+      </tran>
+      <state_glyph node="12,28,12,6">
+       <entry box="1,2,10,2"/>
+      </state_glyph>
+     </state>
+     <state_glyph node="2,8,62,58"/>
     </state>
-    <state_diagram size="69,63"/>
+    <state_diagram size="90,68"/>
+   </statechart>
+  </class>
+  <class name="aoEncoder" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="34,10,4,0,6">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="idle">
+     <state_glyph node="30,16,8,20"/>
+    </state>
+    <state_diagram size="80,50"/>
    </statechart>
   </class>
   <attribute name="AO_Scale" type="QActive * const" visibility="0x00" properties="0x00"/>
   <attribute name="AO_Grinder" type="QActive * const" visibility="0x00" properties="0x00"/>
   <attribute name="TargetDose" type="float" visibility="0x00" properties="0x00"/>
-  <operation name="Scale_constructor" type="void" visibility="0x00" properties="0x00">
-   <code>QActive_ctor(&amp;AO_Scale.super, Q_STATE_CAST(&amp;Scale_initial));</code>
+  <attribute name="Weight" type="float" visibility="0x00" properties="0x00">
+   <documentation>The current measured weight on the scale.</documentation>
+  </attribute>
+  <attribute name="AO_Encoder" type="QActive * const" visibility="0x00" properties="0x00"/>
+  <operation name="aoScale_constructor" type="void" visibility="0x00" properties="0x00">
+   <code>QActive_ctor(&amp;AO_Scale.super, Q_STATE_CAST(&amp;aoScale_initial));</code>
   </operation>
-  <operation name="Grinder_constructor" type="void" visibility="0x00" properties="0x00">
+  <operation name="aoGrinder_constructor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
-   <code>QActive_ctor(&amp;AO_Grinder.super, Q_STATE_CAST(&amp;Grinder_initial));</code>
+   <code>QActive_ctor(&amp;AO_Grinder.super, Q_STATE_CAST(&amp;aoGrinder_initial));</code>
+  </operation>
+  <operation name="aoEncoder_constructor" type="void" visibility="0x00" properties="0x00">
+   <code>QActive_ctor(&amp;AO_Encoder.super, Q_STATE_CAST(&amp;aoEncoder_initial));</code>
   </operation>
  </package>
  <directory name=".">
@@ -158,19 +265,24 @@ extern &quot;C&quot; {
 
 static QEvt scaleQueue[5];
 static QEvt grinderQueue[5];
+static QEvt encoderQueue[5];
 
 // QF_active[] array defines all active object control blocks
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,     0                    },
     { (QActive *)&amp;AO_Scale,   scaleQueue,    Q_DIM(scaleQueue)    },
-    { (QActive *)&amp;AO_Grinder, grinderQueue,  Q_DIM(grinderQueue)  }
+    { (QActive *)&amp;AO_Grinder, grinderQueue,  Q_DIM(grinderQueue)  },
+    { (QActive *)&amp;AO_Encoder, encoderQueue,  Q_DIM(encoderQueue)  }
 };
 
 
 // make sure that the QF_active[] array matches QF_MAX_ACTIVE in qpn_port.h
 Q_ASSERT_COMPILE(QF_MAX_ACTIVE == Q_DIM(QF_active) - 1);
 
+//Q_ASSERT_COMPILE(1 - 1);
+
 $define(components::TargetDose)
+$define(components::Weight)
 
 
 /* QF callbacks ============================================================*/
@@ -215,8 +327,9 @@ void setup() {
 
     BSP_init(); // initialize the BSP
 
-    Scale_constructor();  // instantiate the Sensor AO
-    Grinder_constructor();    // instantiate the Pirs AO
+    aoScale_constructor();
+    aoGrinder_constructor();
+    aoEncoder_constructor();
 
     QF_run();       // transfer control to QF-nano
 }
@@ -225,7 +338,7 @@ void loop() {
 
 }</text>
   </file>
-  <file name="scale.cpp">
+  <file name="aoScale.cpp">
    <text>
 //#include &quot;qfn_port.h&quot;
 #include &quot;qpn.h&quot;
@@ -236,16 +349,16 @@ void loop() {
 
 
 /* Scale class declaration -----------------------------------------------*/
-$declare(components::Scale)
+$declare(components::aoScale)
 
 /* Global objects ----------------------------------------------------------*/
-Scale AO_Scale;     /* the single instance of the Scale active object */
+aoScale AO_Scale;     /* the single instance of the Scale active object */
 
 /* Scale class definition ------------------------------------------------*/
-$define(components::Scale_constructor)
-$define(components::Scale)</text>
+$define(components::aoScale_constructor)
+$define(components::aoScale)</text>
   </file>
-  <file name="grinder.cpp">
+  <file name="aoGrinder.cpp">
    <text>
 //#include &quot;qfn_port.h&quot;
 #include &quot;qpn.h&quot;
@@ -256,14 +369,14 @@ $define(components::Scale)</text>
 
 
 /* Scale class declaration -----------------------------------------------*/
-$declare(components::Grinder)
+$declare(components::aoGrinder)
 
 /* Global objects ----------------------------------------------------------*/
-Grinder AO_Grinder;     /* the single instance of the Grinder active object */
+aoGrinder AO_Grinder;     /* the single instance of the Grinder active object */
 
 /* Scale class definition ------------------------------------------------*/
-$define(components::Grinder_constructor)
-$define(components::Grinder)</text>
+$define(components::aoGrinder_constructor)
+$define(components::aoGrinder)</text>
   </file>
   <file name="activeObjects.h">
    <text>#ifndef activeobjects_h
@@ -279,15 +392,38 @@ $define(components::Grinder)</text>
 #include &quot;signals.h&quot;
 
 // active objects
-extern struct Scale     AO_Scale;
-extern struct Grinder   AO_Grinder;
+extern struct aoScale     AO_Scale;
+extern struct aoGrinder   AO_Grinder;
+extern struct aoEncoder   AO_Encoder;
 
 $declare(components::TargetDose)
+$declare(components::Weight)
 
-$declare(components::Scale_constructor)
-$declare(components::Grinder_constructor)
+$declare(components::aoScale_constructor)
+$declare(components::aoGrinder_constructor)
+$declare(components::aoEncoder_constructor)
 
 #endif /* activeobjects_h */</text>
+  </file>
+  <file name="aoEncoder.cpp">
+   <text>
+//#include &quot;qfn_port.h&quot;
+#include &quot;qpn.h&quot;
+#include &quot;board.h&quot;
+#include &quot;activeObjects.h&quot;
+
+/*Q_DEFINE_THIS_FILE*/
+
+
+/* Scale class declaration -----------------------------------------------*/
+$declare(components::aoEncoder)
+
+/* Global objects ----------------------------------------------------------*/
+aoEncoder AO_Encoder;     /* the single instance of the Encoder active object */
+
+/* Scale class definition ------------------------------------------------*/
+$define(components::aoEncoder_constructor)
+$define(components::aoEncoder)</text>
   </file>
  </directory>
 </model>

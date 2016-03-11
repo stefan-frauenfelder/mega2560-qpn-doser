@@ -28,17 +28,23 @@
 #include "signals.h"
 
 // active objects
-extern struct Scale     AO_Scale;
-extern struct Grinder   AO_Grinder;
+extern struct aoScale     AO_Scale;
+extern struct aoGrinder   AO_Grinder;
+extern struct aoEncoder   AO_Encoder;
 
 extern float TargetDose;
 
+extern float Weight;
 
-/*${components::Scale_constructor} .........................................*/
-void Scale_constructor(void);
 
-/*${components::Grinder_constructor} .......................................*/
-void Grinder_constructor(void);
+/*${components::aoScale_constructor} .......................................*/
+void aoScale_constructor(void);
+
+/*${components::aoGrinder_constructor} .....................................*/
+void aoGrinder_constructor(void);
+
+/*${components::aoEncoder_constructor} .....................................*/
+void aoEncoder_constructor(void);
 
 
 #endif /* activeobjects_h */

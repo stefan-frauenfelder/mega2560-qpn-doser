@@ -17,19 +17,19 @@ Adafruit_SSD1306 display(OLED_DC, OLED_RESET, OLED_CS);
 
 
 float lastGramms = 0;
-float alpha = 0.4;
+float alpha = 0.8;
 
 void postEncoderEvent(int direction) {
 
     if (direction == 1) {
         // post event
         QActive_postISR((QActive *)&AO_Grinder, ENCODER_INC_SIG, 0);
-        Serial1.println("ENCODER_INC_SIG posted.");
+        //Serial1.println("ENCODER_INC_SIG posted.");
     }
     if (direction == -1) {
         // post event
         QActive_postISR((QActive *)&AO_Grinder, ENCODER_DEC_SIG, 0);
-        Serial1.println("ENCODER_DEC_SIG posted.");
+        //Serial1.println("ENCODER_DEC_SIG posted.");
     }
 }
 
@@ -51,14 +51,13 @@ ISR(INT5_vect) {
     }
 }
 
-/*
-ISR(INT6_vect) { 
+
+ISR(INT0_vect) { 
     // post event
-    //GrinderEvent *pEvt = Q_NEW(GrinderEvent, BUTTON_DOWN_SIG);
-    //AO_Grinder->POST(pEvt, 2);
+    QActive_postISR((QActive *)&AO_Grinder, BUTTON_DOWN_SIG, 0);
     Serial1.println("BUTTON_DOWN_SIG posted.");
 }
-*/
+
 
 
 
@@ -69,6 +68,10 @@ void BSP_ledOff(void) {
 void BSP_ledOn(void) {
     digitalWrite(BUTTON_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
     //Serial1.println(myEnc.read());
+}
+
+void BSP_println(char* str) {
+    Serial1.println(str);
 }
 
 void BSP_setupTickTimer(void) {
@@ -102,63 +105,62 @@ void BSP_displayDose(float dose) {
 
     // clear area
     //display.clearDisplay();
-    display.fillRect(0,0,128,28,0);
+    display.fillRect(0,0,128,22,0);
 
-    display.setFont();
+    display.setFont(&FreeSansBold9pt7b);
 
-    //char buffer[10] = {"123456789"};
-    //dtostrf(dose,5,1,buffer);
-    //display.getTextBounds(buffer, 0, 0, &x1, &y1, &w, &h);
+    display.setCursor(10,14);
 
-    display.setCursor(0,10);
-    if (dose>0) {
-        display.print(" ");
-    }
-    //if (abs(dose)<1000) {
-        //display.print(" ");
-        if (abs(dose)<100) {
-            display.print(" ");
-            if (abs(dose)<10) {
-                display.print(" ");
-                if (abs(dose)<1) {
-                    display.print(" ");
-                }
-            }
-        }
-    //}
-    display.print(dose,1);
+    char buffer[10];
+
+    // convert float to string using dtostrf(FLOAT,WIDTH,PRECSISION,BUFFER);
+    dtostrf(dose, 5, FLOAT_PRECISION, buffer);
+
+    display.print("Dose:");
+    display.print(buffer);
     display.print("g");
     display.display();
 }
 
 void BSP_displayPosition(float position) {
 
-    // clear area
-    display.fillRect(0,20,128,40,0);
+    // clear last number
+    //tft.getTextBounds(string, x, y, &y1, &y1, &w, &h);
 
-    //display.drawRoundRect(2, 20, 100, 40, 3, 1);
+
+    display.fillRect(0,24,128,39,0);
+
+    display.drawRoundRect(2, 22, 124, 42, 3, 1);
 
     display.setFont(&FreeSansBold18pt7b);
 
-    display.setCursor(0,50);
-    if (position>0) {
-        display.print(" ");
-    }
-    //if (abs(position)<1000) {
-        //display.print(" ");
-        if (abs(position)<100) {
-            display.print(" ");
-            if (abs(position)<10) {
-                display.print(" ");
-                if (abs(position)<1) {
-                    display.print(" ");
-                }
-            }
-        }
-    //}
-    display.print(position,1);
+    char buffer[10];
+
+    // convert float to string using dtostrf(FLOAT,WIDTH,PRECSISION,BUFFER);
+    dtostrf(position, 5, FLOAT_PRECISION, buffer);
+
+    display.setCursor(12,53);
+
+    display.print(buffer);
     display.print("g");
     display.display();
+}
+
+void originOfCenterTextInBounds(char* str, uint16_t x0b, uint16_t y0b, uint16_t xb, uint16_t yb, int16_t* x0t, int16_t* y0t){
+
+    display.setFont(&FreeSansBold18pt7b);
+
+    uint16_t w, h;
+
+    display.getTextBounds(str, 0, 0, x0t, y0t, &w, &h);
+
+    Serial1.print("Bounds for string are: ");
+    Serial1.print(w);
+    Serial1.print(" x ");
+    Serial1.println(h);
+
+    *x0t = (xb - w) / 2;
+    *y0t = (yb + h) / 2;
 }
 
 
@@ -182,6 +184,13 @@ float BSP_scaleSample(void) {
     return result;
 }
 
+void BSP_scaleTare(void) {
+
+    scale.tare(10);
+    // post an event to signal tare is done
+    QActive_postISR((QActive *)&AO_Scale, SCALE_TARE_DONE_SIG, 0);
+}
+
 
 void BSP_init(void) {
 
@@ -191,9 +200,9 @@ void BSP_init(void) {
     cli();
 
     // button pins
-    //pinMode(BUTTON_LED_PIN, OUTPUT);    // button LED
-    //pinMode(BUTTON_SWITCH_PIN, INPUT);     // button direction
-    //digitalWrite(BUTTON_SWITCH_PIN, HIGH); // button: turn on pullup resistors
+    pinMode(BUTTON_LED_PIN, OUTPUT);    // button LED
+    pinMode(BUTTON_SWITCH_PIN, INPUT);     // button direction
+    digitalWrite(BUTTON_SWITCH_PIN, HIGH); // button: turn on pullup resistors
 
     // configure external interrupt 1 (ArduinoPin2, PD1, Encoder)
     EICRB |= (1<<ISC40)|(0<<ISC41); // external int ctrl, any edge detection for interrupt INT4
@@ -202,9 +211,9 @@ void BSP_init(void) {
     EICRB |= (1<<ISC50)|(0<<ISC51); // external int ctrl, any edge detection for interrupt INT5
     EIMSK |= (1<<INT5);             // external int mask, activates interrupt 1
 
-    // configure external interrupt 6 (Pin7)
-    //EICRB |= (0<<ISC60)|(1<<ISC61); // external int ctrl, falling edge detection for interrupt INT6
-    //EIMSK |= (1<<INT6);             // external int mask, activates interrupt 6
+    // configure external interrupt 0 (Pin21)
+    EICRA |= (0<<ISC00)|(1<<ISC01); // external int ctrl, falling edge detection for interrupt INT0
+    EIMSK |= (1<<INT0);             // external int mask, activates interrupt 0
 
     Serial1.println("Interrupts set up done.");
 
@@ -230,6 +239,18 @@ void BSP_init(void) {
 
     //display.setFont(&FreeSansBold18pt7b);
     display.display();
+
+    
+
+
+    int16_t x0t, y0t;
+
+    originOfCenterTextInBounds("1234", 0, 0, 128, 64, &x0t, &y0t);
+
+    Serial1.print("x0t: ");
+    Serial1.println(x0t);
+    Serial1.print("y0t: ");
+    Serial1.println(y0t);
 
     sei(); /* set Global Interrupt Enable */
 
