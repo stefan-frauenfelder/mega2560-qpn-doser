@@ -42,6 +42,6 @@ const int SCALE_MEASUREMENT_RATE    =  BSP_TICKS_PER_SEC / 20;
 
 // grinder
 const float GRINDER_DOSE_STEP       =  0.1;
-
+const int   GRINDER_SETTLING_TIME   =  BSP_TICKS_PER_SEC / 2;
 
 #endif   /* config_h */

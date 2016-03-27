@@ -12,6 +12,8 @@ enum GrinderSignals { // signals for the Grinder application
     SCALE_START_SIG,
     SCALE_STOP_SIG,
     SCALE_SAMPLING_DONE_SIG,
+    SCALE_FREEZE_SIG,
+    SCALE_FREEZE_DONE_SIG,
     ENCODER_INC_SIG,
     ENCODER_DEC_SIG
 };

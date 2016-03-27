@@ -36,13 +36,14 @@ typedef struct aoGrinder {
 
 /* protected: */
 static QState aoGrinder_initial(aoGrinder * const me);
-static QState aoGrinder_operational(aoGrinder * const me);
 static QState aoGrinder_idle(aoGrinder * const me);
 static QState aoGrinder_grinding(aoGrinder * const me);
 static QState aoGrinder_polling(aoGrinder * const me);
 static QState aoGrinder_done(aoGrinder * const me);
 static QState aoGrinder_rest(aoGrinder * const me);
 static QState aoGrinder_calibration(aoGrinder * const me);
+static QState aoGrinder_settling(aoGrinder * const me);
+static QState aoGrinder_settlingPolling(aoGrinder * const me);
 
 
 /* Global objects ----------------------------------------------------------*/
@@ -58,29 +59,22 @@ void aoGrinder_constructor(void) {
 static QState aoGrinder_initial(aoGrinder * const me) {
     /* ${components::aoGrinder::SM::initial} */
     TargetDose = 7;
-    return Q_TRAN(&aoGrinder_operational);
+    return Q_TRAN(&aoGrinder_idle);
 }
-/*${components::aoGrinder::SM::operational} ................................*/
-static QState aoGrinder_operational(aoGrinder * const me) {
+/*${components::aoGrinder::SM::idle} .......................................*/
+static QState aoGrinder_idle(aoGrinder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* ${components::aoGrinder::SM::operational::initial} */
-        case Q_INIT_SIG: {
-            status_ = Q_TRAN(&aoGrinder_idle);
+        /* ${components::aoGrinder::SM::idle} */
+        case Q_ENTRY_SIG: {
+            BSP_println("Grinder enter idle.");
+            BSP_displayPosition(0.0);
+            status_ = Q_HANDLED();
             break;
         }
-        /* ${components::aoGrinder::SM::operational::ENCODER_INC} */
-        case ENCODER_INC_SIG: {
-            TargetDose += GRINDER_DOSE_STEP;
-            BSP_displayDose(TargetDose);
-            status_ = Q_TRAN(&aoGrinder_operational);
-            break;
-        }
-        /* ${components::aoGrinder::SM::operational::ENCODER_DEC} */
-        case ENCODER_DEC_SIG: {
-            TargetDose -= GRINDER_DOSE_STEP;
-            BSP_displayDose(TargetDose);
-            status_ = Q_TRAN(&aoGrinder_operational);
+        /* ${components::aoGrinder::SM::idle::BUTTON_DOWN} */
+        case BUTTON_DOWN_SIG: {
+            status_ = Q_TRAN(&aoGrinder_calibration);
             break;
         }
         default: {
@@ -90,33 +84,11 @@ static QState aoGrinder_operational(aoGrinder * const me) {
     }
     return status_;
 }
-/*${components::aoGrinder::SM::operational::idle} ..........................*/
-static QState aoGrinder_idle(aoGrinder * const me) {
-    QState status_;
-    switch (Q_SIG(me)) {
-        /* ${components::aoGrinder::SM::operational::idle} */
-        case Q_ENTRY_SIG: {
-            BSP_println("Grinder enter idle.");
-            status_ = Q_HANDLED();
-            break;
-        }
-        /* ${components::aoGrinder::SM::operational::idle::BUTTON_DOWN} */
-        case BUTTON_DOWN_SIG: {
-            status_ = Q_TRAN(&aoGrinder_calibration);
-            break;
-        }
-        default: {
-            status_ = Q_SUPER(&aoGrinder_operational);
-            break;
-        }
-    }
-    return status_;
-}
-/*${components::aoGrinder::SM::operational::grinding} ......................*/
+/*${components::aoGrinder::SM::grinding} ...................................*/
 static QState aoGrinder_grinding(aoGrinder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* ${components::aoGrinder::SM::operational::grinding} */
+        /* ${components::aoGrinder::SM::grinding} */
         case Q_ENTRY_SIG: {
             BSP_println("Start grinding.");
             BSP_ledOn();
@@ -124,35 +96,41 @@ static QState aoGrinder_grinding(aoGrinder * const me) {
             status_ = Q_HANDLED();
             break;
         }
-        /* ${components::aoGrinder::SM::operational::grinding} */
+        /* ${components::aoGrinder::SM::grinding} */
         case Q_EXIT_SIG: {
             BSP_ledOff();
             status_ = Q_HANDLED();
             break;
         }
-        /* ${components::aoGrinder::SM::operational::grinding::initial} */
+        /* ${components::aoGrinder::SM::grinding::initial} */
         case Q_INIT_SIG: {
             status_ = Q_TRAN(&aoGrinder_polling);
             break;
         }
         default: {
-            status_ = Q_SUPER(&aoGrinder_operational);
+            status_ = Q_SUPER(&QHsm_top);
             break;
         }
     }
     return status_;
 }
-/*${components::aoGrinder::SM::operational::grinding::polling} .............*/
+/*${components::aoGrinder::SM::grinding::polling} ..........................*/
 static QState aoGrinder_polling(aoGrinder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* ${components::aoGrinder::SM::operational::grinding::polling::SCALE_SAMPLING_DONE} */
+        /* ${components::aoGrinder::SM::grinding::polling} */
+        case Q_ENTRY_SIG: {
+            BSP_displayPosition(Weight);
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoGrinder::SM::grinding::polling::SCALE_SAMPLING_DONE} */
         case SCALE_SAMPLING_DONE_SIG: {
-            /* ${components::aoGrinder::SM::operational::grinding::polling::SCALE_SAMPLING_D~::[enougth?]} */
+            /* ${components::aoGrinder::SM::grinding::polling::SCALE_SAMPLING_D~::[enougth?]} */
             if (Weight >= TargetDose) {
-                status_ = Q_TRAN(&aoGrinder_done);
+                status_ = Q_TRAN(&aoGrinder_settling);
             }
-            /* ${components::aoGrinder::SM::operational::grinding::polling::SCALE_SAMPLING_D~::[else]} */
+            /* ${components::aoGrinder::SM::grinding::polling::SCALE_SAMPLING_D~::[else]} */
             else {
                 status_ = Q_TRAN(&aoGrinder_polling);
             }
@@ -165,45 +143,46 @@ static QState aoGrinder_polling(aoGrinder * const me) {
     }
     return status_;
 }
-/*${components::aoGrinder::SM::operational::done} ..........................*/
+/*${components::aoGrinder::SM::done} .......................................*/
 static QState aoGrinder_done(aoGrinder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* ${components::aoGrinder::SM::operational::done} */
+        /* ${components::aoGrinder::SM::done} */
         case Q_ENTRY_SIG: {
             BSP_println("Grinder done.");
+            BSP_displayPosition(BSP_scaleAverageWeight());
             status_ = Q_HANDLED();
             break;
         }
-        /* ${components::aoGrinder::SM::operational::done} */
+        /* ${components::aoGrinder::SM::done} */
         case Q_EXIT_SIG: {
             QActive_postISR((QActive *)&AO_Scale, SCALE_STOP_SIG, 0);
             status_ = Q_HANDLED();
             break;
         }
-        /* ${components::aoGrinder::SM::operational::done::initial} */
+        /* ${components::aoGrinder::SM::done::initial} */
         case Q_INIT_SIG: {
             status_ = Q_TRAN(&aoGrinder_rest);
             break;
         }
         default: {
-            status_ = Q_SUPER(&aoGrinder_operational);
+            status_ = Q_SUPER(&QHsm_top);
             break;
         }
     }
     return status_;
 }
-/*${components::aoGrinder::SM::operational::done::rest} ....................*/
+/*${components::aoGrinder::SM::done::rest} .................................*/
 static QState aoGrinder_rest(aoGrinder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* ${components::aoGrinder::SM::operational::done::rest::SCALE_SAMPLING_DONE} */
+        /* ${components::aoGrinder::SM::done::rest::SCALE_SAMPLING_DONE} */
         case SCALE_SAMPLING_DONE_SIG: {
-            /* ${components::aoGrinder::SM::operational::done::rest::SCALE_SAMPLING_D~::[Weight>0]} */
+            /* ${components::aoGrinder::SM::done::rest::SCALE_SAMPLING_D~::[Weight>0]} */
             if (Weight > 0) {
                 status_ = Q_TRAN(&aoGrinder_rest);
             }
-            /* ${components::aoGrinder::SM::operational::done::rest::SCALE_SAMPLING_D~::[else]} */
+            /* ${components::aoGrinder::SM::done::rest::SCALE_SAMPLING_D~::[else]} */
             else {
                 status_ = Q_TRAN(&aoGrinder_idle);
             }
@@ -216,23 +195,72 @@ static QState aoGrinder_rest(aoGrinder * const me) {
     }
     return status_;
 }
-/*${components::aoGrinder::SM::operational::calibration} ...................*/
+/*${components::aoGrinder::SM::calibration} ................................*/
 static QState aoGrinder_calibration(aoGrinder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
-        /* ${components::aoGrinder::SM::operational::calibration} */
+        /* ${components::aoGrinder::SM::calibration} */
         case Q_ENTRY_SIG: {
             QActive_postISR((QActive *)&AO_Scale, SCALE_TARE_SIG, 0);
             status_ = Q_HANDLED();
             break;
         }
-        /* ${components::aoGrinder::SM::operational::calibration::SCALE_TARE_DONE} */
+        /* ${components::aoGrinder::SM::calibration::SCALE_TARE_DONE} */
         case SCALE_TARE_DONE_SIG: {
             status_ = Q_TRAN(&aoGrinder_grinding);
             break;
         }
         default: {
-            status_ = Q_SUPER(&aoGrinder_operational);
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoGrinder::SM::settling} ...................................*/
+static QState aoGrinder_settling(aoGrinder * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoGrinder::SM::settling} */
+        case Q_ENTRY_SIG: {
+            QActive_arm((QActive *)me, GRINDER_SETTLING_TIME);
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoGrinder::SM::settling::initial} */
+        case Q_INIT_SIG: {
+            status_ = Q_TRAN(&aoGrinder_settlingPolling);
+            break;
+        }
+        /* ${components::aoGrinder::SM::settling::Q_TIMEOUT} */
+        case Q_TIMEOUT_SIG: {
+            status_ = Q_TRAN(&aoGrinder_done);
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoGrinder::SM::settling::settlingPolling} ..................*/
+static QState aoGrinder_settlingPolling(aoGrinder * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoGrinder::SM::settling::settlingPolling} */
+        case Q_ENTRY_SIG: {
+            BSP_displayPosition(Weight);
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoGrinder::SM::settling::settlingPolling::SCALE_SAMPLING_DONE} */
+        case SCALE_SAMPLING_DONE_SIG: {
+            status_ = Q_TRAN(&aoGrinder_settlingPolling);
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&aoGrinder_settling);
             break;
         }
     }

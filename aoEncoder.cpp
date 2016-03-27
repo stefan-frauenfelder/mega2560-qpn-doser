@@ -54,6 +54,20 @@ static QState aoEncoder_initial(aoEncoder * const me) {
 static QState aoEncoder_idle(aoEncoder * const me) {
     QState status_;
     switch (Q_SIG(me)) {
+        /* ${components::aoEncoder::SM::idle::ENCODER_INC} */
+        case ENCODER_INC_SIG: {
+            TargetDose += GRINDER_DOSE_STEP;
+            BSP_displayDose(TargetDose);
+            status_ = Q_TRAN(&aoEncoder_idle);
+            break;
+        }
+        /* ${components::aoEncoder::SM::idle::ENCODER_DEC} */
+        case ENCODER_DEC_SIG: {
+            TargetDose -= GRINDER_DOSE_STEP;
+            BSP_displayDose(TargetDose);
+            status_ = Q_TRAN(&aoEncoder_idle);
+            break;
+        }
         default: {
             status_ = Q_SUPER(&QHsm_top);
             break;

@@ -15,20 +15,21 @@ HX711 scale(SCALE_DOUT, SCALE_CLK);
 // OLED
 Adafruit_SSD1306 display(OLED_DC, OLED_RESET, OLED_CS);
 
-
-float lastGramms = 0;
 float alpha = 0.8;
+float lastGramms = 0;
+float averageWeight = 0;
+float averageWeightArray[10];
 
 void postEncoderEvent(int direction) {
 
     if (direction == 1) {
         // post event
-        QActive_postISR((QActive *)&AO_Grinder, ENCODER_INC_SIG, 0);
+        QActive_postISR((QActive *)&AO_Encoder, ENCODER_INC_SIG, 0);
         //Serial1.println("ENCODER_INC_SIG posted.");
     }
     if (direction == -1) {
         // post event
-        QActive_postISR((QActive *)&AO_Grinder, ENCODER_DEC_SIG, 0);
+        QActive_postISR((QActive *)&AO_Encoder, ENCODER_DEC_SIG, 0);
         //Serial1.println("ENCODER_DEC_SIG posted.");
     }
 }
@@ -58,16 +59,12 @@ ISR(INT0_vect) {
     Serial1.println("BUTTON_DOWN_SIG posted.");
 }
 
-
-
-
 void BSP_ledOff(void) {
     digitalWrite(BUTTON_LED_PIN, LOW);    // turn the LED off by making the voltage LOW
 }
 
 void BSP_ledOn(void) {
     digitalWrite(BUTTON_LED_PIN, HIGH);   // turn the LED on (HIGH is the voltage level)
-    //Serial1.println(myEnc.read());
 }
 
 void BSP_println(char* str) {
@@ -176,16 +173,33 @@ float BSP_scaleSample(void) {
         result = 0;
     }
 
-    // display weight
-    BSP_displayPosition(result);
+    // do averaging
+    float sum = 0;
+    for (int i = 0; i < 9; i++) {
+        averageWeightArray[i+1] = averageWeightArray[i];
+        sum += averageWeightArray[i+1];
+    }
+    averageWeightArray[0] = lastGramms;
+    sum += lastGramms;
+
+    averageWeight = sum/10;
+
     // post an event to signal measurement is done
     QActive_postISR((QActive *)&AO_Scale, SCALE_SAMPLING_DONE_SIG, 0);
 
     return result;
 }
 
+float BSP_scaleAverageWeight(void) {
+
+    return averageWeight;
+}
+
 void BSP_scaleTare(void) {
 
+    // reset history
+    lastGramms = 0;
+    // tare
     scale.tare(10);
     // post an event to signal tare is done
     QActive_postISR((QActive *)&AO_Scale, SCALE_TARE_DONE_SIG, 0);
