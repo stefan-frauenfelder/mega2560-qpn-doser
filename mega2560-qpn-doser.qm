@@ -246,6 +246,32 @@ BSP_displayDose(TargetDose);</action>
     <state_diagram size="80,50"/>
    </statechart>
   </class>
+  <class name="aoWeight" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="21,11,5,0,5,6">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="state1">
+     <state_glyph node="17,17,17,9"/>
+    </state>
+    <state_diagram size="80,50"/>
+   </statechart>
+  </class>
+  <class name="aoDisplay" superclass="qpn::QActive">
+   <statechart>
+    <initial target="../1">
+     <initial_glyph conn="25,9,5,0,1,6">
+      <action box="0,-2,10,2"/>
+     </initial_glyph>
+    </initial>
+    <state name="state1">
+     <state_glyph node="17,15,19,10"/>
+    </state>
+    <state_diagram size="80,50"/>
+   </statechart>
+  </class>
   <attribute name="AO_Scale" type="QActive * const" visibility="0x00" properties="0x00"/>
   <attribute name="AO_Grinder" type="QActive * const" visibility="0x00" properties="0x00"/>
   <attribute name="TargetDose" type="float" visibility="0x00" properties="0x00"/>
@@ -253,15 +279,27 @@ BSP_displayDose(TargetDose);</action>
    <documentation>The current measured weight on the scale.</documentation>
   </attribute>
   <attribute name="AO_Encoder" type="QActive * const" visibility="0x00" properties="0x00"/>
+  <attribute name="AO_Weight" type="QActive * const" visibility="0x00" properties="0x00"/>
+  <attribute name="AO_Display" type="QActive * const" visibility="0x00" properties="0x00"/>
   <operation name="aoScale_constructor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
    <code>QActive_ctor(&amp;AO_Scale.super, Q_STATE_CAST(&amp;aoScale_initial));</code>
   </operation>
   <operation name="aoGrinder_constructor" type="void" visibility="0x00" properties="0x00">
    <documentation>constructor</documentation>
    <code>QActive_ctor(&amp;AO_Grinder.super, Q_STATE_CAST(&amp;aoGrinder_initial));</code>
   </operation>
+  <operation name="aoWeight_constructor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
+   <code>QActive_ctor(&amp;AO_Weight.super, Q_STATE_CAST(&amp;aoWeight_initial));</code>
+  </operation>
   <operation name="aoEncoder_constructor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
    <code>QActive_ctor(&amp;AO_Encoder.super, Q_STATE_CAST(&amp;aoEncoder_initial));</code>
+  </operation>
+  <operation name="aoDisplay_constructor" type="void" visibility="0x00" properties="0x00">
+   <documentation>constructor</documentation>
+   <code>QActive_ctor(&amp;AO_Display.super, Q_STATE_CAST(&amp;aoDisplay_initial));</code>
   </operation>
  </package>
  <directory name=".">
@@ -290,12 +328,16 @@ extern &quot;C&quot; {
 static QEvt scaleQueue[5];
 static QEvt grinderQueue[5];
 static QEvt encoderQueue[5];
+static QEvt displayQueue[5];
+static QEvt weightQueue[5];
 
 // QF_active[] array defines all active object control blocks
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,     0                    },
     { (QActive *)&amp;AO_Scale,   scaleQueue,    Q_DIM(scaleQueue)    },
     { (QActive *)&amp;AO_Grinder, grinderQueue,  Q_DIM(grinderQueue)  },
+    { (QActive *)&amp;AO_Display, displayQueue,  Q_DIM(displayQueue)  },
+    { (QActive *)&amp;AO_Weight,  weightQueue,   Q_DIM(weightQueue)  },
     { (QActive *)&amp;AO_Encoder, encoderQueue,  Q_DIM(encoderQueue)  }
 };
 
@@ -354,6 +396,8 @@ void setup() {
     aoScale_constructor();
     aoGrinder_constructor();
     aoEncoder_constructor();
+    aoDisplay_constructor();
+    aoWeight_constructor();
 
     QF_run();       // transfer control to QF-nano
 }
@@ -419,6 +463,8 @@ $define(components::aoGrinder)</text>
 extern struct aoScale     AO_Scale;
 extern struct aoGrinder   AO_Grinder;
 extern struct aoEncoder   AO_Encoder;
+extern struct aoDisplay   AO_Display;
+extern struct aoWeight    AO_Weight;
 
 $declare(components::TargetDose)
 $declare(components::Weight)
@@ -426,6 +472,8 @@ $declare(components::Weight)
 $declare(components::aoScale_constructor)
 $declare(components::aoGrinder_constructor)
 $declare(components::aoEncoder_constructor)
+$declare(components::aoDisplay_constructor)
+$declare(components::aoWeight_constructor)
 
 #endif /* activeobjects_h */</text>
   </file>
@@ -448,6 +496,46 @@ aoEncoder AO_Encoder;     /* the single instance of the Encoder active object */
 /* Scale class definition ------------------------------------------------*/
 $define(components::aoEncoder_constructor)
 $define(components::aoEncoder)</text>
+  </file>
+  <file name="aoDisplay.cpp">
+   <text>
+//#include &quot;qfn_port.h&quot;
+#include &quot;qpn.h&quot;
+#include &quot;board.h&quot;
+#include &quot;activeObjects.h&quot;
+
+/*Q_DEFINE_THIS_FILE*/
+
+
+/* Scale class declaration -----------------------------------------------*/
+$declare(components::aoDisplay)
+
+/* Global objects ----------------------------------------------------------*/
+aoDisplay AO_Display;     /* the single instance of the Encoder active object */
+
+/* Scale class definition ------------------------------------------------*/
+$define(components::aoDisplay_constructor)
+$define(components::aoDisplay)</text>
+  </file>
+  <file name="aoWeight.cpp">
+   <text>
+//#include &quot;qfn_port.h&quot;
+#include &quot;qpn.h&quot;
+#include &quot;board.h&quot;
+#include &quot;activeObjects.h&quot;
+
+/*Q_DEFINE_THIS_FILE*/
+
+
+/* Scale class declaration -----------------------------------------------*/
+$declare(components::aoWeight)
+
+/* Global objects ----------------------------------------------------------*/
+aoWeight AO_Weight;     /* the single instance of the Weight active object */
+
+/* Scale class definition ------------------------------------------------*/
+$define(components::aoWeight_constructor)
+$define(components::aoWeight)</text>
   </file>
  </directory>
 </model>

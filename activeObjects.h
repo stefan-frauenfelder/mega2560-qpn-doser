@@ -31,6 +31,8 @@
 extern struct aoScale     AO_Scale;
 extern struct aoGrinder   AO_Grinder;
 extern struct aoEncoder   AO_Encoder;
+extern struct aoDisplay   AO_Display;
+extern struct aoWeight    AO_Weight;
 
 extern float TargetDose;
 
@@ -45,6 +47,12 @@ void aoGrinder_constructor(void);
 
 /*${components::aoEncoder_constructor} .....................................*/
 void aoEncoder_constructor(void);
+
+/*${components::aoDisplay_constructor} .....................................*/
+void aoDisplay_constructor(void);
+
+/*${components::aoWeight_constructor} ......................................*/
+void aoWeight_constructor(void);
 
 
 #endif /* activeobjects_h */

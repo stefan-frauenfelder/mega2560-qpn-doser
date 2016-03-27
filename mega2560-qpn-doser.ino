@@ -39,12 +39,16 @@ extern "C" {
 static QEvt scaleQueue[5];
 static QEvt grinderQueue[5];
 static QEvt encoderQueue[5];
+static QEvt displayQueue[5];
+static QEvt weightQueue[5];
 
 // QF_active[] array defines all active object control blocks
 QActiveCB const Q_ROM Q_ROM_VAR QF_active[] = {
     { (QActive *)0,           (QEvt *)0,     0                    },
     { (QActive *)&AO_Scale,   scaleQueue,    Q_DIM(scaleQueue)    },
     { (QActive *)&AO_Grinder, grinderQueue,  Q_DIM(grinderQueue)  },
+    { (QActive *)&AO_Display, displayQueue,  Q_DIM(displayQueue)  },
+    { (QActive *)&AO_Weight,  weightQueue,   Q_DIM(weightQueue)  },
     { (QActive *)&AO_Encoder, encoderQueue,  Q_DIM(encoderQueue)  }
 };
 
@@ -107,6 +111,8 @@ void setup() {
     aoScale_constructor();
     aoGrinder_constructor();
     aoEncoder_constructor();
+    aoDisplay_constructor();
+    aoWeight_constructor();
 
     QF_run();       // transfer control to QF-nano
 }
