@@ -33,7 +33,11 @@ typedef struct aoWeight {
 
 /* protected: */
 static QState aoWeight_initial(aoWeight * const me);
-static QState aoWeight_state1(aoWeight * const me);
+static QState aoWeight_aroundZero(aoWeight * const me);
+static QState aoWeight_aboveTreshold(aoWeight * const me);
+static QState aoWeight_positive(aoWeight * const me);
+static QState aoWeight_negative(aoWeight * const me);
+static QState aoWeight_aboveDose(aoWeight * const me);
 
 
 /* Global objects ----------------------------------------------------------*/
@@ -48,12 +52,156 @@ void aoWeight_constructor(void) {
 /*${components::aoWeight::SM} ..............................................*/
 static QState aoWeight_initial(aoWeight * const me) {
     /* ${components::aoWeight::SM::initial} */
-    return Q_TRAN(&aoWeight_state1);
+    return Q_TRAN(&aoWeight_aroundZero);
 }
-/*${components::aoWeight::SM::state1} ......................................*/
-static QState aoWeight_state1(aoWeight * const me) {
+/*${components::aoWeight::SM::aroundZero} ..................................*/
+static QState aoWeight_aroundZero(aoWeight * const me) {
     QState status_;
     switch (Q_SIG(me)) {
+        /* ${components::aoWeight::SM::aroundZero} */
+        case Q_ENTRY_SIG: {
+            BSP_println("Weight around zero.");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoWeight::SM::aroundZero::REFRESH} */
+        case REFRESH_SIG: {
+            /* ${components::aoWeight::SM::aroundZero::REFRESH::[<zero]} */
+            if (Weight < SCALE_NEGATIVE_THRESHOLD) {
+                status_ = Q_TRAN(&aoWeight_negative);
+            }
+            /* ${components::aoWeight::SM::aroundZero::REFRESH::[>zero]} */
+            else if (Weight > SCALE_ZERO_THRESHOLD) {
+                status_ = Q_TRAN(&aoWeight_positive);
+            }
+            else {
+                status_ = Q_UNHANDLED();
+            }
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoWeight::SM::aboveTreshold} ...............................*/
+static QState aoWeight_aboveTreshold(aoWeight * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoWeight::SM::aboveTreshold} */
+        case Q_ENTRY_SIG: {
+            BSP_println("Weight above threshold.");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoWeight::SM::aboveTreshold::REFRESH} */
+        case REFRESH_SIG: {
+            /* ${components::aoWeight::SM::aboveTreshold::REFRESH::[Weight>TargetDose]} */
+            if (Weight > TargetDose) {
+                QActive_postISR((QActive *)&AO_Grinder, DOSE_REACHED_SIG, 0);
+                status_ = Q_TRAN(&aoWeight_aboveDose);
+            }
+            /* ${components::aoWeight::SM::aboveTreshold::REFRESH::[<threshold]} */
+            else if (Weight < (TargetDose + SCALE_TARGET_THRESHOLD)) {
+                status_ = Q_TRAN(&aoWeight_positive);
+            }
+            else {
+                status_ = Q_UNHANDLED();
+            }
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoWeight::SM::positive} ....................................*/
+static QState aoWeight_positive(aoWeight * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoWeight::SM::positive} */
+        case Q_ENTRY_SIG: {
+            BSP_println("Weight positive.");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoWeight::SM::positive::REFRESH} */
+        case REFRESH_SIG: {
+            /* ${components::aoWeight::SM::positive::REFRESH::[>threshold]} */
+            if (Weight > (TargetDose + SCALE_TARGET_THRESHOLD)) {
+                QActive_postISR((QActive *)&AO_Grinder, THRESHOLD_REACHED_SIG, 0);
+                status_ = Q_TRAN(&aoWeight_aboveTreshold);
+            }
+            /* ${components::aoWeight::SM::positive::REFRESH::[<zero]} */
+            else if (Weight < SCALE_ZERO_THRESHOLD) {
+                status_ = Q_TRAN(&aoWeight_aroundZero);
+            }
+            else {
+                status_ = Q_UNHANDLED();
+            }
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoWeight::SM::negative} ....................................*/
+static QState aoWeight_negative(aoWeight * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoWeight::SM::negative} */
+        case Q_ENTRY_SIG: {
+            BSP_println("Weight negative.");
+            QActive_postISR((QActive *)&AO_Grinder, NEGATIVE_REACHED_SIG, 0);
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoWeight::SM::negative::REFRESH} */
+        case REFRESH_SIG: {
+            /* ${components::aoWeight::SM::negative::REFRESH::[>negative]} */
+            if (Weight > SCALE_NEGATIVE_THRESHOLD) {
+                status_ = Q_TRAN(&aoWeight_aroundZero);
+            }
+            else {
+                status_ = Q_UNHANDLED();
+            }
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoWeight::SM::aboveDose} ...................................*/
+static QState aoWeight_aboveDose(aoWeight * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoWeight::SM::aboveDose} */
+        case Q_ENTRY_SIG: {
+            BSP_println("Weight above dose.");
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoWeight::SM::aboveDose::REFRESH} */
+        case REFRESH_SIG: {
+            /* ${components::aoWeight::SM::aboveDose::REFRESH::[Weight<TargetDose]} */
+            if (Weight < TargetDose) {
+                status_ = Q_TRAN(&aoWeight_aboveTreshold);
+            }
+            else {
+                status_ = Q_UNHANDLED();
+            }
+            break;
+        }
         default: {
             status_ = Q_SUPER(&QHsm_top);
             break;

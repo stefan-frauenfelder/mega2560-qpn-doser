@@ -33,7 +33,9 @@ typedef struct aoDisplay {
 
 /* protected: */
 static QState aoDisplay_initial(aoDisplay * const me);
-static QState aoDisplay_state1(aoDisplay * const me);
+static QState aoDisplay_displayWeight(aoDisplay * const me);
+static QState aoDisplay_displayResult(aoDisplay * const me);
+static QState aoDisplay_displayIdle(aoDisplay * const me);
 
 
 /* Global objects ----------------------------------------------------------*/
@@ -48,12 +50,77 @@ void aoDisplay_constructor(void) {
 /*${components::aoDisplay::SM} .............................................*/
 static QState aoDisplay_initial(aoDisplay * const me) {
     /* ${components::aoDisplay::SM::initial} */
-    return Q_TRAN(&aoDisplay_state1);
+    return Q_TRAN(&aoDisplay_displayIdle);
 }
-/*${components::aoDisplay::SM::state1} .....................................*/
-static QState aoDisplay_state1(aoDisplay * const me) {
+/*${components::aoDisplay::SM::displayWeight} ..............................*/
+static QState aoDisplay_displayWeight(aoDisplay * const me) {
     QState status_;
     switch (Q_SIG(me)) {
+        /* ${components::aoDisplay::SM::displayWeight} */
+        case Q_ENTRY_SIG: {
+            BSP_displayPosition(Weight);
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoDisplay::SM::displayWeight::DISPLAY_RESULT} */
+        case DISPLAY_RESULT_SIG: {
+            status_ = Q_TRAN(&aoDisplay_displayResult);
+            break;
+        }
+        /* ${components::aoDisplay::SM::displayWeight::DISPLAY_IDLE} */
+        case DISPLAY_IDLE_SIG: {
+            status_ = Q_TRAN(&aoDisplay_displayIdle);
+            break;
+        }
+        /* ${components::aoDisplay::SM::displayWeight::REFRESH} */
+        case REFRESH_SIG: {
+            status_ = Q_TRAN(&aoDisplay_displayWeight);
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoDisplay::SM::displayResult} ..............................*/
+static QState aoDisplay_displayResult(aoDisplay * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoDisplay::SM::displayResult} */
+        case Q_ENTRY_SIG: {
+            BSP_displayPosition(BSP_scaleAverageWeight());
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoDisplay::SM::displayResult::DISPLAY_IDLE} */
+        case DISPLAY_IDLE_SIG: {
+            status_ = Q_TRAN(&aoDisplay_displayIdle);
+            break;
+        }
+        default: {
+            status_ = Q_SUPER(&QHsm_top);
+            break;
+        }
+    }
+    return status_;
+}
+/*${components::aoDisplay::SM::displayIdle} ................................*/
+static QState aoDisplay_displayIdle(aoDisplay * const me) {
+    QState status_;
+    switch (Q_SIG(me)) {
+        /* ${components::aoDisplay::SM::displayIdle} */
+        case Q_ENTRY_SIG: {
+            BSP_displayPosition(0.0);
+            status_ = Q_HANDLED();
+            break;
+        }
+        /* ${components::aoDisplay::SM::displayIdle::DISPLAY_WEIGHT} */
+        case DISPLAY_WEIGHT_SIG: {
+            status_ = Q_TRAN(&aoDisplay_displayWeight);
+            break;
+        }
         default: {
             status_ = Q_SUPER(&QHsm_top);
             break;

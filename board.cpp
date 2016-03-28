@@ -169,7 +169,7 @@ float BSP_scaleSample(void) {
 
     float result = lastGramms;
 
-    if (abs(result) < 0.1){
+    if (abs(result) < SCALE_ZERO_THRESHOLD){
         result = 0;
     }
 

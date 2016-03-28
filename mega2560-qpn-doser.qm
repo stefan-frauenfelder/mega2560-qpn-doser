@@ -7,23 +7,23 @@
    <attribute name="weight" type="float" visibility="0x00" properties="0x00"/>
    <statechart>
     <initial target="../1">
-     <initial_glyph conn="44,6,5,0,8,6">
+     <initial_glyph conn="41,4,4,0,4">
       <action box="0,-2,10,2"/>
      </initial_glyph>
     </initial>
     <state name="idle">
      <entry>BSP_println(&quot;Scale enter idle.&quot;);</entry>
      <tran trig="SCALE_TARE" target="../../2">
-      <tran_glyph conn="46,16,3,1,-22">
+      <tran_glyph conn="36,12,3,1,-18">
        <action box="-11,-2,10,2"/>
       </tran_glyph>
      </tran>
      <tran trig="SCALE_START" target="../../3">
-      <tran_glyph conn="52,24,2,0,6">
-       <action box="0,2,13,2"/>
+      <tran_glyph conn="40,18,2,0,8">
+       <action box="-11,4,10,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="46,12,12,12">
+     <state_glyph node="36,8,10,10">
       <entry box="1,2,6,2"/>
      </state_glyph>
     </state>
@@ -32,11 +32,11 @@
 BSP_scaleTare();</entry>
      <tran trig="SCALE_TARE_DONE" target="../../1">
       <action>QActive_postISR((QActive *)&amp;AO_Grinder, SCALE_TARE_DONE_SIG, 0);</action>
-      <tran_glyph conn="24,20,1,3,22">
-       <action box="0,-2,16,2"/>
+      <tran_glyph conn="18,14,1,3,18">
+       <action box="0,0,16,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="12,12,12,12">
+     <state_glyph node="10,8,8,10">
       <entry box="1,2,7,2"/>
      </state_glyph>
     </state>
@@ -44,23 +44,23 @@ BSP_scaleTare();</entry>
      <entry>BSP_println(&quot;Start measuring.&quot;);</entry>
      <exit>BSP_println(&quot;Stop measuring.&quot;);</exit>
      <initial target="../3">
-      <initial_glyph conn="56,34,5,0,6,4">
+      <initial_glyph conn="46,30,5,0,4,2">
        <action box="0,-2,10,2"/>
       </initial_glyph>
      </initial>
      <tran trig="SCALE_STOP" target="../../1">
-      <tran_glyph conn="68,30,0,1,-12,-10">
-       <action box="0,-6,10,2"/>
+      <tran_glyph conn="42,26,0,2,-8">
+       <action box="1,-4,10,2"/>
       </tran_glyph>
      </tran>
      <state name="recovering">
       <entry brief="armTimer">QActive_arm((QActive *)me, SCALE_MEASUREMENT_RATE);</entry>
       <tran trig="Q_TIMEOUT" target="../../3">
-       <tran_glyph conn="38,44,1,3,20">
+       <tran_glyph conn="38,44,1,2,12,-4">
         <action box="0,0,10,2"/>
        </tran_glyph>
       </tran>
-      <state_glyph node="28,38,10,10">
+      <state_glyph node="28,38,10,8">
        <entry box="1,2,9,2"/>
       </state_glyph>
      </state>
@@ -68,21 +68,22 @@ BSP_scaleTare();</entry>
       <entry brief="sample">me-&gt;weight = BSP_scaleSample();
 Weight = me-&gt;weight;</entry>
       <tran trig="SCALE_SAMPLING_DONE" target="../../2">
-       <action>QActive_postISR((QActive *)&amp;AO_Grinder, SCALE_SAMPLING_DONE_SIG, 0);</action>
-       <tran_glyph conn="58,42,3,1,-20">
+       <action>QActive_postISR((QActive *)&amp;AO_Weight, REFRESH_SIG, 0);
+QActive_postISR((QActive *)&amp;AO_Display, REFRESH_SIG, 0);</action>
+       <tran_glyph conn="46,36,3,0,-14,2">
         <action box="-18,-2,19,2"/>
        </tran_glyph>
       </tran>
-      <state_glyph node="58,38,10,10">
-       <entry box="1,2,9,2"/>
+      <state_glyph node="46,32,8,8">
+       <entry box="1,2,7,2"/>
       </state_glyph>
      </state>
-     <state_glyph node="24,30,48,20">
+     <state_glyph node="26,26,30,22">
       <entry box="1,2,6,2"/>
       <exit box="1,4,6,2"/>
      </state_glyph>
     </state>
-    <state_diagram size="106,61"/>
+    <state_diagram size="66,58"/>
    </statechart>
   </class>
   <class name="aoGrinder" superclass="qpn::QActive">
@@ -90,129 +91,73 @@ Weight = me-&gt;weight;</entry>
    <statechart>
     <initial target="../1">
      <action brief="TargetDose = 7">TargetDose = 7;</action>
-     <initial_glyph conn="10,8,5,0,8,4">
+     <initial_glyph conn="14,4,5,0,6,2">
       <action box="0,-2,12,2"/>
      </initial_glyph>
     </initial>
     <state name="idle">
      <entry>BSP_println(&quot;Grinder enter idle.&quot;);
-BSP_displayPosition(0.0);</entry>
+QActive_postISR((QActive *)&amp;AO_Display, DISPLAY_IDLE_SIG, 0);</entry>
      <tran trig="BUTTON_DOWN" target="../../4">
-      <tran_glyph conn="18,22,2,0,6">
-       <action box="0,0,14,2"/>
+      <tran_glyph conn="20,12,2,0,4">
+       <action box="0,1,14,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="14,12,8,10">
+     <state_glyph node="12,6,16,6">
       <entry box="1,2,7,2"/>
      </state_glyph>
     </state>
     <state name="grinding">
-     <entry brief="Start motor &amp; scale">BSP_println(&quot;Start grinding.&quot;);
+     <entry brief="start motor &amp; scale">BSP_println(&quot;Start grinding.&quot;);
 BSP_ledOn();
-QActive_postISR((QActive *)&amp;AO_Scale, SCALE_START_SIG, 0);</entry>
-     <exit brief="Stop motor">BSP_ledOff();</exit>
-     <initial target="../1">
-      <initial_glyph conn="16,50,5,0,4,2">
-       <action box="0,-2,10,2"/>
-      </initial_glyph>
-     </initial>
-     <state name="polling">
-      <entry>BSP_displayPosition(Weight);</entry>
-      <tran trig="SCALE_SAMPLING_DONE">
-       <choice target="../../../../5">
-        <guard brief="enougth?">Weight &gt;= TargetDose</guard>
-        <choice_glyph conn="32,54,5,3,14">
-         <action box="0,-4,8,2"/>
-        </choice_glyph>
-       </choice>
-       <choice target="../..">
-        <guard brief="else"/>
-        <choice_glyph conn="32,54,4,1,4,-8">
-         <action box="1,0,10,2"/>
-        </choice_glyph>
-       </choice>
-       <tran_glyph conn="24,54,1,-1,8">
-        <action box="0,0,5,4"/>
-       </tran_glyph>
-      </tran>
-      <state_glyph node="16,52,8,8">
-       <entry box="1,2,6,2"/>
-      </state_glyph>
-     </state>
-     <state_glyph node="12,42,28,20">
-      <entry box="1,2,16,2"/>
+QActive_postISR((QActive *)&amp;AO_Scale, SCALE_START_SIG, 0);
+QActive_postISR((QActive *)&amp;AO_Display, DISPLAY_WEIGHT_SIG, 0);</entry>
+     <exit brief="Stop motor">BSP_println(&quot;Stop grinding.&quot;);
+BSP_ledOff();</exit>
+     <tran trig="THRESHOLD_REACHED" target="../../5">
+      <tran_glyph conn="20,34,2,0,4">
+       <action box="0,1,17,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="12,26,16,8">
+      <entry box="1,2,14,2"/>
       <exit box="1,4,10,2"/>
      </state_glyph>
     </state>
     <state name="done">
-     <entry>BSP_println(&quot;Grinder done.&quot;);
-BSP_displayPosition(BSP_scaleAverageWeight());</entry>
-     <exit brief="Stop scale">QActive_postISR((QActive *)&amp;AO_Scale, SCALE_STOP_SIG, 0);</exit>
-     <initial target="../1">
-      <initial_glyph conn="34,28,5,3,4">
-       <action box="0,-2,10,2"/>
-      </initial_glyph>
-     </initial>
-     <state name="rest">
-      <tran trig="SCALE_SAMPLING_DONE">
-       <choice target="../..">
-        <guard brief="Weight &gt; 0">Weight &gt; 0</guard>
-        <choice_glyph conn="52,26,4,1,4,-6">
-         <action box="0,1,10,2"/>
-        </choice_glyph>
-       </choice>
-       <choice target="../../../../1">
-        <guard brief="else"/>
-        <choice_glyph conn="52,26,4,1,-8,-30">
-         <action box="0,-4,10,2"/>
-        </choice_glyph>
-       </choice>
-       <tran_glyph conn="46,26,1,-1,6">
-        <action box="0,0,4,2"/>
-       </tran_glyph>
-      </tran>
-      <state_glyph node="38,24,8,8"/>
-     </state>
-     <state_glyph node="28,20,32,14">
-      <entry box="1,2,6,2"/>
-      <exit box="1,4,10,2"/>
+     <entry brief="show average">BSP_println(&quot;Grinder done.&quot;);
+QActive_postISR((QActive *)&amp;AO_Display, DISPLAY_RESULT_SIG, 0);</entry>
+     <exit brief="stop scale">QActive_postISR((QActive *)&amp;AO_Scale, SCALE_STOP_SIG, 0);
+QActive_postISR((QActive *)&amp;AO_Display, DISPLAY_IDLE_SIG, 0);</exit>
+     <tran trig="NEGATIVE_REACHED" target="../../1">
+      <tran_glyph conn="20,56,2,1,2,18,-50,-10">
+       <action box="0,2,18,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="12,48,16,8">
+      <entry box="1,2,15,2"/>
+      <exit box="1,4,12,2"/>
      </state_glyph>
     </state>
     <state name="calibration">
-     <entry brief="scale calib">QActive_postISR((QActive *)&amp;AO_Scale, SCALE_TARE_SIG, 0);</entry>
+     <entry brief="scale tare">QActive_postISR((QActive *)&amp;AO_Scale, SCALE_TARE_SIG, 0);</entry>
      <tran trig="SCALE_TARE_DONE" target="../../2">
-      <tran_glyph conn="18,34,2,0,8">
-       <action box="0,0,16,2"/>
+      <tran_glyph conn="20,22,2,0,4">
+       <action box="0,1,16,2"/>
       </tran_glyph>
      </tran>
-     <state_glyph node="12,28,12,6">
+     <state_glyph node="12,16,16,6">
       <entry box="1,2,10,2"/>
      </state_glyph>
     </state>
     <state name="settling">
-     <entry brief="arm">QActive_arm((QActive *)me, GRINDER_SETTLING_TIME);</entry>
-     <initial target="../2">
-      <initial_glyph conn="48,50,5,0,4,2">
-       <action box="0,-2,10,2"/>
-      </initial_glyph>
-     </initial>
+     <entry brief="wait">QActive_arm((QActive *)me, GRINDER_SETTLING_TIME);</entry>
      <tran trig="Q_TIMEOUT" target="../../3">
-      <tran_glyph conn="54,42,0,2,-8">
-       <action box="0,-2,10,2"/>
+      <tran_glyph conn="20,44,2,0,4">
+       <action box="0,1,10,2"/>
       </tran_glyph>
      </tran>
-     <state name="settlingPolling">
-      <entry>BSP_displayPosition(Weight);</entry>
-      <tran trig="SCALE_SAMPLING_DONE" target="..">
-       <tran_glyph conn="56,54,1,1,6,4,-6">
-        <action box="0,0,5,3"/>
-       </tran_glyph>
-      </tran>
-      <state_glyph node="48,52,8,8">
-       <entry box="1,2,7,2"/>
-      </state_glyph>
-     </state>
-     <state_glyph node="46,42,20,20">
+     <state_glyph node="12,38,16,6">
       <entry box="1,2,6,2"/>
      </state_glyph>
     </state>
@@ -249,25 +194,168 @@ BSP_displayDose(TargetDose);</action>
   <class name="aoWeight" superclass="qpn::QActive">
    <statechart>
     <initial target="../1">
-     <initial_glyph conn="21,11,5,0,5,6">
+     <initial_glyph conn="4,51,5,3,12">
       <action box="0,-2,10,2"/>
      </initial_glyph>
     </initial>
-    <state name="state1">
-     <state_glyph node="17,17,17,9"/>
+    <state name="aroundZero">
+     <entry>BSP_println(&quot;Weight around zero.&quot;);</entry>
+     <tran trig="REFRESH">
+      <choice target="../../../4">
+       <guard brief="&lt; zero">Weight &lt; SCALE_NEGATIVE_THRESHOLD</guard>
+       <choice_glyph conn="34,52,4,0,4,-14,4">
+        <action box="-14,4,12,2"/>
+       </choice_glyph>
+      </choice>
+      <choice target="../../../3">
+       <guard brief="&gt; zero">Weight &gt; SCALE_ZERO_THRESHOLD</guard>
+       <choice_glyph conn="34,52,5,2,4,-12">
+        <action box="4,-10,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="16,52,3,-1,18">
+       <action box="0,-2,18,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="16,46,26,8">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
     </state>
-    <state_diagram size="80,50"/>
+    <state name="aboveTreshold">
+     <entry>BSP_println(&quot;Weight above threshold.&quot;);</entry>
+     <tran trig="REFRESH">
+      <choice target="../../../5">
+       <guard>Weight &gt; TargetDose</guard>
+       <action>QActive_postISR((QActive *)&amp;AO_Grinder, DOSE_REACHED_SIG, 0);</action>
+       <choice_glyph conn="34,24,5,2,4,-12">
+        <action box="4,-10,15,2"/>
+       </choice_glyph>
+      </choice>
+      <choice target="../../../3">
+       <guard brief="&lt; threshold">Weight &lt; (TargetDose + SCALE_TARGET_THRESHOLD)</guard>
+       <choice_glyph conn="34,24,4,0,4,-14,4">
+        <action box="-14,4,17,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="16,24,3,-1,18">
+       <action box="0,-2,17,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="16,18,26,8">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="positive">
+     <entry>BSP_println(&quot;Weight positive.&quot;);</entry>
+     <tran trig="REFRESH">
+      <choice target="../../../2">
+       <guard brief="&gt; threshold">Weight &gt; (TargetDose + SCALE_TARGET_THRESHOLD)</guard>
+       <action>QActive_postISR((QActive *)&amp;AO_Grinder, THRESHOLD_REACHED_SIG, 0);</action>
+       <choice_glyph conn="34,38,5,2,4,-12">
+        <action box="4,-10,20,2"/>
+       </choice_glyph>
+      </choice>
+      <choice target="../../../1">
+       <guard brief="&lt; zero">Weight &lt; SCALE_ZERO_THRESHOLD</guard>
+       <choice_glyph conn="34,38,4,0,4,-14,4">
+        <action box="-14,4,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="16,38,3,-1,18">
+       <action box="0,-2,17,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="16,32,26,8">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="negative">
+     <entry>BSP_println(&quot;Weight negative.&quot;);
+QActive_postISR((QActive *)&amp;AO_Grinder, NEGATIVE_REACHED_SIG, 0);</entry>
+     <tran trig="REFRESH">
+      <choice target="../../../1">
+       <guard brief="&gt; negative">Weight &gt; SCALE_NEGATIVE_THRESHOLD</guard>
+       <choice_glyph conn="36,66,5,2,2,-12">
+        <action box="2,-10,10,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="16,66,3,-1,20">
+       <action box="0,-2,18,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="16,60,26,8">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state name="aboveDose">
+     <entry>BSP_println(&quot;Weight above dose.&quot;);</entry>
+     <tran trig="REFRESH">
+      <choice target="../../../2">
+       <guard>Weight &lt; TargetDose</guard>
+       <choice_glyph conn="34,10,4,0,4,-14,4">
+        <action box="-14,4,14,2"/>
+       </choice_glyph>
+      </choice>
+      <tran_glyph conn="16,10,3,-1,18">
+       <action box="0,-2,18,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="16,4,26,8">
+      <entry box="1,2,6,2"/>
+     </state_glyph>
+    </state>
+    <state_diagram size="76,83"/>
    </statechart>
   </class>
   <class name="aoDisplay" superclass="qpn::QActive">
    <statechart>
-    <initial target="../1">
-     <initial_glyph conn="25,9,5,0,1,6">
+    <initial target="../3">
+     <initial_glyph conn="28,2,4,0,4">
       <action box="0,-2,10,2"/>
      </initial_glyph>
     </initial>
-    <state name="state1">
-     <state_glyph node="17,15,19,10"/>
+    <state name="displayWeight">
+     <entry brief="display weight">BSP_displayPosition(Weight);</entry>
+     <tran trig="DISPLAY_RESULT" target="../../2">
+      <tran_glyph conn="28,24,2,0,8">
+       <action box="0,2,15,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="DISPLAY_IDLE" target="../../3">
+      <tran_glyph conn="38,22,1,1,6,-12,-6">
+       <action box="0,0,10,2"/>
+      </tran_glyph>
+     </tran>
+     <tran trig="REFRESH" target="..">
+      <tran_glyph conn="18,20,3,3,-4,2,4">
+       <action box="-11,0,7,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="18,18,20,6">
+      <entry box="1,2,15,2"/>
+     </state_glyph>
+    </state>
+    <state name="displayResult">
+     <entry brief="display average">BSP_displayPosition(BSP_scaleAverageWeight());</entry>
+     <tran trig="DISPLAY_IDLE" target="../../3">
+      <tran_glyph conn="38,36,1,1,12,-28,-12">
+       <action box="0,0,10,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="18,32,20,6">
+      <entry box="1,2,15,2"/>
+     </state_glyph>
+    </state>
+    <state name="displayIdle">
+     <entry brief="display 0.0">BSP_displayPosition(0.0);</entry>
+     <tran trig="DISPLAY_WEIGHT" target="../../1">
+      <tran_glyph conn="28,12,2,0,6">
+       <action box="0,2,15,2"/>
+      </tran_glyph>
+     </tran>
+     <state_glyph node="18,6,20,6">
+      <entry box="1,2,12,2"/>
+     </state_glyph>
     </state>
     <state_diagram size="80,50"/>
    </statechart>

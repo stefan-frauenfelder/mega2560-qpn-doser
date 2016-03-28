@@ -38,10 +38,15 @@ const int TWOSECS_TOUT              =  2 * BSP_TICKS_PER_SEC;   // two seconds
 const int THREESECS_TOUT            =  3 * BSP_TICKS_PER_SEC;   // three seconds
 
 // scale
-const int SCALE_MEASUREMENT_RATE    =  BSP_TICKS_PER_SEC / 20;
+const int   SCALE_MEASUREMENT_RATE    =  BSP_TICKS_PER_SEC / 20;
+const float SCALE_NEGATIVE_THRESHOLD = -1.0;
+const float SCALE_ZERO_THRESHOLD     =  0.3;
+const float SCALE_TARGET_THRESHOLD   = -0.4;
 
 // grinder
 const float GRINDER_DOSE_STEP       =  0.1;
 const int   GRINDER_SETTLING_TIME   =  BSP_TICKS_PER_SEC / 2;
+
+
 
 #endif   /* config_h */

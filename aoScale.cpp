@@ -176,7 +176,8 @@ static QState aoScale_sampling(aoScale * const me) {
         }
         /* ${components::aoScale::SM::measuring::sampling::SCALE_SAMPLING_DONE} */
         case SCALE_SAMPLING_DONE_SIG: {
-            QActive_postISR((QActive *)&AO_Grinder, SCALE_SAMPLING_DONE_SIG, 0);
+            QActive_postISR((QActive *)&AO_Weight, REFRESH_SIG, 0);
+            QActive_postISR((QActive *)&AO_Display, REFRESH_SIG, 0);
             status_ = Q_TRAN(&aoScale_recovering);
             break;
         }
